@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.agents/
+.claude/
+data/
+*.db
+*.db-wal
+*.db-shm
+.env
+oauth-credentials.json
+docker-compose.override.yml

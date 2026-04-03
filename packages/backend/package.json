@@ -1,0 +1,27 @@
+{
+  "name": "@file-agent/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.1",
+    "@mariozechner/pi-ai": "^0.64.0",
+    "@types/adm-zip": "^0.5.8",
+    "adm-zip": "^0.5.17",
+    "better-sqlite3": "^11.9.1",
+    "exceljs": "^4.4.0",
+    "hono": "^4.7.10",
+    "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

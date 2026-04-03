@@ -1,0 +1,16 @@
+# Local Linux test — mount oh-my-superpowers
+# Usage: docker compose -f docker-compose.local.yml up
+services:
+  file-agent:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - "${HOME}/.local/share/oh-my-superpowers:/data/superpowers:ro"
+      - "./data:/app/data"
+    env_file:
+      - .env
+    environment:
+      - SCAN_DIRS=/data/superpowers
+      - DB_PATH=/app/data/file_index.db
+      - FILE_AGENT_PORT=8080
