@@ -6,12 +6,6 @@ const searchFilesSchema = Type.Object({
     description:
       "搜索关键词列表，包含中英文关键词、文件名片段、扩展名等。至少 5 个关键词。",
   }),
-  max_results: Type.Optional(
-    Type.Number({
-      description: "最大返回结果数，默认 10",
-      default: 10,
-    }),
-  ),
 });
 
 type SearchFilesParams = Static<typeof searchFilesSchema>;
@@ -54,12 +48,12 @@ export function createSearchFilesTool(): AgentTool<
       _toolCallId: string,
       params: SearchFilesParams,
     ): Promise<AgentToolResult<SearchFilesDetails>> => {
-      const { keywords, max_results = 10 } = params;
+      const { keywords } = params;
 
       const response = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keywords, max_results }),
+        body: JSON.stringify({ keywords }),
       });
 
       if (!response.ok) {
