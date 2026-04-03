@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "npm run dev --workspace=packages/backend",
     "build": "npm run build --workspaces",
+    "build:desktop": "npm run build --workspace=packages/frontend && npm run build --workspace=packages/backend && npm run build --workspace=packages/desktop",
+    "dist:win": "npm run build:desktop && npm run dist:win --workspace=packages/desktop",
+    "start:desktop": "npm run start --workspace=packages/desktop",
     "test": "vitest run",
     "clean": "npm run clean --workspaces --if-present"
   },

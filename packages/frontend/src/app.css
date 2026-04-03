@@ -1,1 +1,173 @@
 @import "@mariozechner/pi-web-ui/app.css";
+
+:root {
+  --fa-bg: linear-gradient(135deg, #f1efe7 0%, #dce6f2 100%);
+  --fa-card: rgba(255, 255, 255, 0.82);
+  --fa-border: rgba(30, 41, 59, 0.12);
+  --fa-text: #172033;
+  --fa-subtle: #52607a;
+  --fa-accent: #1f6feb;
+  --fa-accent-strong: #164fb5;
+}
+
+body {
+  color: var(--fa-text);
+}
+
+.fa-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: var(--fa-bg);
+}
+
+.fa-card {
+  width: min(920px, 100%);
+  border-radius: 28px;
+  border: 1px solid var(--fa-border);
+  background: var(--fa-card);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+}
+
+.fa-init-card,
+.fa-settings {
+  padding: 32px;
+}
+
+.fa-eyebrow {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fa-accent);
+}
+
+.fa-subtle {
+  color: var(--fa-subtle);
+  font-size: 14px;
+}
+
+.fa-error {
+  color: #b42318;
+  font-size: 14px;
+}
+
+.fa-settings-header,
+.fa-section-header,
+.fa-inline-actions,
+.fa-directory-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fa-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.fa-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--fa-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.fa-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fa-field span,
+.fa-section h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.fa-field input,
+.fa-field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--fa-border);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.fa-primary-btn,
+.fa-secondary-btn,
+.fa-ghost-btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fa-primary-btn {
+  background: var(--fa-accent);
+  color: white;
+}
+
+.fa-primary-btn:hover {
+  background: var(--fa-accent-strong);
+}
+
+.fa-secondary-btn,
+.fa-ghost-btn {
+  border-color: var(--fa-border);
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--fa-text);
+}
+
+.fa-directory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fa-directory-row {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--fa-border);
+}
+
+.fa-empty {
+  padding: 18px;
+  border-radius: 14px;
+  color: var(--fa-subtle);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 720px) {
+  .fa-shell {
+    padding: 16px;
+  }
+
+  .fa-card,
+  .fa-init-card,
+  .fa-settings {
+    padding: 20px;
+  }
+
+  .fa-settings-header,
+  .fa-section-header,
+  .fa-inline-actions,
+  .fa-directory-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

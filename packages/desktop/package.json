@@ -1,0 +1,48 @@
+{
+  "name": "@file-agent/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Windows desktop shell for FileAgent",
+  "author": "FileAgent",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare:app": "node scripts/prepare-app.mjs",
+    "dist:win": "npm run prepare:app && electron-builder --win nsis",
+    "start": "electron .",
+    "clean": "rm -rf dist app release"
+  },
+  "build": {
+    "appId": "com.fileagent.desktop",
+    "productName": "FileAgent",
+    "directories": {
+      "app": "app",
+      "output": "release"
+    },
+    "files": [
+      "**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend/dist",
+        "to": "backend"
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend"
+      }
+    ],
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
+    "nodeGypRebuild": false,
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "devDependencies": {
+    "electron": "36.2.1",
+    "electron-builder": "26.0.12",
+    "typescript": "^5.8.3"
+  }
+}

@@ -3,6 +3,8 @@ dist/
 .agents/
 .claude/
 data/
+packages/desktop/app/
+packages/desktop/release/
 *.db
 *.db-wal
 *.db-shm

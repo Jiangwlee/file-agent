@@ -1,4 +1,5 @@
 import path from "node:path";
+import { loadAppConfig, resolveAppPaths } from "./app-config.js";
 
 export interface PathMapping {
   containerPath: string;
@@ -22,14 +23,16 @@ function parsePathMap(raw: string | undefined): PathMapping[] {
 }
 
 export function loadConfig(): Config {
-  const scanDirs = (process.env.SCAN_DIRS || "/data")
-    .split(",")
-    .map((d) => d.trim());
+  const appConfig = loadAppConfig();
+  const appPaths = resolveAppPaths();
+  const scanDirs = process.env.SCAN_DIRS
+    ? process.env.SCAN_DIRS.split(",").map((d) => d.trim())
+    : appConfig.scanDirs;
 
   return {
     scanDirs,
     pathMap: parsePathMap(process.env.PATH_MAP),
-    dbPath: process.env.DB_PATH || path.join(process.cwd(), "data", "file_index.db"),
+    dbPath: process.env.DB_PATH || appPaths.dbPath || path.join(process.cwd(), "data", "file_index.db"),
     port: parseInt(process.env.FILE_AGENT_PORT || "8080", 10),
   };
 }

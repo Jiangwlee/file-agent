@@ -18,6 +18,66 @@ import type {
   Api,
 } from "@mariozechner/pi-ai";
 import type { OAuthStore } from "./oauth-store.js";
+import { loadAppConfig } from "./app-config.js";
+
+interface OllamaTagResponse {
+  models?: Array<{ name: string }>;
+}
+
+interface OllamaShowResponse {
+  capabilities?: string[];
+  model_info?: Record<string, string>;
+}
+
+async function discoverOllamaModels(baseUrl: string): Promise<Model<Api>[]> {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  const tagsResp = await fetch(`${trimmed}/api/tags`);
+  if (!tagsResp.ok) {
+    throw new Error(`Ollama 连接失败: HTTP ${tagsResp.status}`);
+  }
+
+  const tags = (await tagsResp.json()) as OllamaTagResponse;
+  const models = tags.models || [];
+  const discovered: Array<Model<Api> | null> = await Promise.all(
+    models.map(async (item) => {
+      const showResp = await fetch(`${trimmed}/api/show`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: item.name }),
+      });
+
+      if (!showResp.ok) return null;
+
+      const details = (await showResp.json()) as OllamaShowResponse;
+      const capabilities = details.capabilities || [];
+      const modelInfo = details.model_info || {};
+      const architecture = modelInfo["general.architecture"] || "";
+      const contextKey = `${architecture}.context_length`;
+      const contextWindow = parseInt(modelInfo[contextKey] || "8192", 10);
+
+      return {
+        id: item.name,
+        name: item.name,
+        api: "openai-completions",
+        provider: "ollama",
+        baseUrl: `${trimmed}/v1`,
+        reasoning: capabilities.includes("thinking"),
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow,
+        maxTokens: contextWindow,
+        compat: {
+          supportsDeveloperRole: false,
+          supportsReasoningEffort: false,
+        },
+      } satisfies Model<Api>;
+    }),
+  );
+
+  return discovered.filter(
+    (model): model is Model<Api> => model !== null,
+  );
+}
 
 /**
  * Convert AssistantMessageEvent to bandwidth-efficient proxy format.
@@ -98,6 +158,10 @@ async function resolveApiKey(
   provider: string,
   oauthStore: OAuthStore,
 ): Promise<{ apiKey: string; model?: Partial<Model<Api>> } | null> {
+  if (provider === "ollama") {
+    return { apiKey: "ollama" };
+  }
+
   // 1. Static env var
   const envKey = getEnvApiKey(provider);
   if (envKey) return { apiKey: envKey };
@@ -134,6 +198,7 @@ export function createLlmProxy(oauthStore: OAuthStore): Hono {
   // ─── Models ─────────────────────────────────────────────────────────
   // Returns available models from providers with env keys OR OAuth credentials
   app.get("/api/models", (c) => {
+    const appConfig = loadAppConfig();
     const available: Array<{
       provider: string;
       id: string;
@@ -154,6 +219,14 @@ export function createLlmProxy(oauthStore: OAuthStore): Hono {
       configuredProviders.add(providerId);
     }
 
+    if (appConfig.model.provider === "ollama" && appConfig.model.selectedModelId) {
+      available.push({
+        provider: "ollama",
+        id: appConfig.model.selectedModelId,
+        name: appConfig.model.selectedModelId,
+      });
+    }
+
     for (const provider of configuredProviders) {
       for (const model of getModels(provider as any)) {
         available.push({
@@ -165,6 +238,33 @@ export function createLlmProxy(oauthStore: OAuthStore): Hono {
     }
 
     return c.json({ models: available });
+  });
+
+  app.post("/api/models/discover", async (c) => {
+    const body = await c.req.json<{ provider?: string; baseUrl?: string }>();
+    if (body.provider !== "ollama" || !body.baseUrl) {
+      return c.json({ error: "Only Ollama discovery is supported." }, 400);
+    }
+
+    try {
+      const models = await discoverOllamaModels(body.baseUrl);
+      return c.json({
+        models: models.map((model) => ({
+          provider: model.provider,
+          id: model.id,
+          name: model.name || model.id,
+          baseUrl: model.baseUrl,
+        })),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          error:
+            error instanceof Error ? error.message : "Failed to discover models",
+        },
+        502,
+      );
+    }
   });
 
   // ─── OAuth ──────────────────────────────────────────────────────────
@@ -263,21 +363,40 @@ export function createLlmProxy(oauthStore: OAuthStore): Hono {
     }>();
 
     const { model, context, options } = body;
+    const appConfig = loadAppConfig();
 
-    const resolved = await resolveApiKey(model.provider, oauthStore);
+    let requestedModel = model;
+    if (
+      appConfig.model.provider === "ollama" &&
+      model.provider === "ollama"
+    ) {
+      requestedModel = {
+        ...model,
+        api: "openai-completions",
+        provider: "ollama",
+        baseUrl: `${appConfig.model.baseUrl.replace(/\/+$/, "")}/v1`,
+        compat: {
+          ...(model as Model<Api>).compat,
+          supportsDeveloperRole: false,
+          supportsReasoningEffort: false,
+        },
+      } as Model<Api>;
+    }
+
+    const resolved = await resolveApiKey(requestedModel.provider, oauthStore);
     if (!resolved) {
       return c.json(
-        { error: `No API key configured for provider: ${model.provider}. Configure env var or login via OAuth.` },
+        { error: `No API key configured for provider: ${requestedModel.provider}. Configure env var or login via OAuth.` },
         401,
       );
     }
 
     // Apply model modifications from OAuth provider if needed
-    let finalModel = model;
-    const oauthProvider = getOAuthProvider(model.provider);
-    const creds = oauthStore.get(model.provider);
+    let finalModel = requestedModel;
+    const oauthProvider = getOAuthProvider(requestedModel.provider);
+    const creds = oauthStore.get(requestedModel.provider);
     if (oauthProvider?.modifyModels && creds) {
-      const modified = oauthProvider.modifyModels([model], creds);
+      const modified = oauthProvider.modifyModels([requestedModel], creds);
       if (modified.length > 0) {
         finalModel = modified[0];
       }

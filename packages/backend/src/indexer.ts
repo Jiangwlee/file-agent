@@ -10,6 +10,11 @@ export interface IndexStats {
   dbSizeBytes: number;
 }
 
+export interface IndexProgress {
+  currentDirectory: string;
+  scannedFiles: number;
+}
+
 function toHostPath(filepath: string, pathMap: PathMapping[]): string | null {
   for (const { containerPath, hostPath } of pathMap) {
     if (filepath.startsWith(containerPath)) {
@@ -100,7 +105,11 @@ function* walkDir(dir: string): Generator<string> {
   }
 }
 
-export function buildIndex(db: Database.Database, config: Config): IndexStats {
+export function buildIndex(
+  db: Database.Database,
+  config: Config,
+  onProgress?: (progress: IndexProgress) => void,
+): IndexStats {
   const now = new Date().toISOString();
 
   // Collect all existing paths for cleanup
@@ -129,6 +138,10 @@ export function buildIndex(db: Database.Database, config: Config): IndexStats {
   const insertMany = db.transaction(() => {
     for (const scanDir of config.scanDirs) {
       if (!fs.existsSync(scanDir)) continue;
+      onProgress?.({
+        currentDirectory: scanDir,
+        scannedFiles: count,
+      });
       for (const filepath of walkDir(scanDir)) {
         seenPaths.add(filepath);
 
@@ -144,6 +157,12 @@ export function buildIndex(db: Database.Database, config: Config): IndexStats {
         // Skip unchanged files
         if (mtimeMap.get(filepath) === mtime) {
           count++;
+          if (count % 25 === 0) {
+            onProgress?.({
+              currentDirectory: scanDir,
+              scannedFiles: count,
+            });
+          }
           continue;
         }
 
@@ -162,6 +181,12 @@ export function buildIndex(db: Database.Database, config: Config): IndexStats {
           indexedAt: now,
         });
         count++;
+        if (count % 25 === 0) {
+          onProgress?.({
+            currentDirectory: scanDir,
+            scannedFiles: count,
+          });
+        }
       }
     }
 
