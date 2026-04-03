@@ -74,8 +74,8 @@ function createDialogContent(
                                   <a
                                     href=${state.url}
                                     target="_blank"
-                                    class="text-xs text-blue-600 hover:underline break-all block"
-                                    >${state.url}</a
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                                    >打开 GitHub 授权页面 ↗</a
                                   >
                                 `
                               : html`<div class="text-xs text-muted-foreground">
@@ -199,8 +199,7 @@ export async function openOAuthDialog(): Promise<void> {
                   url: event.url,
                   instructions: event.instructions,
                 });
-                // Auto-open auth URL
-                window.open(event.url, "_blank");
+                // Don't auto-open — popup blockers (Firefox) block async window.open
                 break;
               case "progress":
                 loginStates.set(providerId, {
