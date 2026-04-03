@@ -6,6 +6,7 @@ import {
   ChatPanel,
   CustomProvidersStore,
   IndexedDBStorageBackend,
+  ModelSelector,
   ProviderKeysStore,
   SessionsStore,
   SettingsStore,
@@ -49,14 +50,21 @@ const storage = new AppStorage(settings, providerKeys, sessions, customProviders
 setAppStorage(storage);
 
 // Fetch default model from server
+type AvailableModel = { provider: string; id: string };
+
+async function getAvailableModels(): Promise<AvailableModel[]> {
+  const resp = await fetch("/api/models");
+  const data = (await resp.json()) as {
+    models: AvailableModel[];
+  };
+  return data.models;
+}
+
 async function getDefaultModel(): Promise<Model<Api>> {
   try {
-    const resp = await fetch("/api/models");
-    const data = (await resp.json()) as {
-      models: Array<{ provider: string; id: string }>;
-    };
-    if (data.models.length > 0) {
-      const m = data.models[0];
+    const models = await getAvailableModels();
+    if (models.length > 0) {
+      const m = models[0];
       const model = getModel(m.provider as any, m.id as any);
       if (model) return model;
     }
@@ -70,7 +78,11 @@ async function getDefaultModel(): Promise<Model<Api>> {
 let chatPanel: ChatPanel;
 
 async function createAgent() {
-  const defaultModel = await getDefaultModel();
+  const [defaultModel, availableModels] = await Promise.all([
+    getDefaultModel(),
+    getAvailableModels().catch(() => []),
+  ]);
+  const allowedProviders = [...new Set(availableModels.map((model) => model.provider))];
 
   const agent = new Agent({
     initialState: {
@@ -91,8 +103,18 @@ async function createAgent() {
   });
 
   await chatPanel.setAgent(agent, {
-    toolsFactory: () => {
-      return [createSearchFilesTool()];
+    toolsFactory: () => [createSearchFilesTool()],
+    // API keys are server-side — skip browser key check
+    onApiKeyRequired: async (_provider) => true,
+    onModelSelect: () => {
+      ModelSelector.open(
+        agent.state.model,
+        (selectedModel) => {
+          agent.setModel(selectedModel);
+          chatPanel.agentInterface?.requestUpdate();
+        },
+        allowedProviders.length > 0 ? allowedProviders : undefined,
+      );
     },
   });
 }
