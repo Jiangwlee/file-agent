@@ -73,6 +73,30 @@ async function bundleBackend() {
     path.join(bundledBackendDir, "better_sqlite3.node"),
   );
 
+  // Write a wrapper that catches crashes and writes a log file
+  const wrapperCode = `"use strict";
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const logDir = process.env.FILE_AGENT_APP_DATA_DIR || os.tmpdir();
+const logPath = path.join(logDir, "backend-crash.log");
+try {
+  const dir = __dirname;
+  const files = fs.readdirSync(dir);
+  fs.writeFileSync(logPath, "Backend starting...\\n" +
+    "  __dirname: " + dir + "\\n" +
+    "  files: " + files.join(", ") + "\\n" +
+    "  node: " + process.version + "\\n" +
+    "  platform: " + process.platform + "\\n" +
+    "  arch: " + process.arch + "\\n");
+  require("./index.cjs");
+} catch (err) {
+  fs.appendFileSync(logPath, "\\nCRASH:\\n" + (err.stack || err) + "\\n");
+  process.exit(1);
+}
+`;
+  await fs.writeFile(path.join(bundledBackendDir, "wrapper.cjs"), wrapperCode);
+
   console.log("✓ Backend bundled successfully");
 }
 

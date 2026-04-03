@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, utilityProcess } from "electron";
@@ -35,7 +36,7 @@ function getBackendEntrypoint(): string {
     return path.join(
       electronProcess.resourcesPath || getWorkspaceRoot(),
       "backend",
-      "index.cjs",
+      "wrapper.cjs",
     );
   }
   return path.join(getWorkspaceRoot(), "packages/backend/dist/index.js");
@@ -86,11 +87,19 @@ async function startBackend(): Promise<void> {
   const exitPromise = new Promise<never>((_, reject) => {
     backendProcess!.on("exit", (code) => {
       backendProcess = null;
+      // Read crash log written by wrapper.cjs
+      let crashLog = "";
+      try {
+        const logPath = path.join(appDataDir, "backend-crash.log");
+        crashLog = fs.readFileSync(logPath, "utf-8");
+      } catch {
+        // No crash log available
+      }
       reject(
         new Error(
           `Backend exited with code ${code}.\n` +
             `Entrypoint: ${entrypoint}\n` +
-            `Stderr:\n${stderrOutput || "(empty)"}`,
+            (crashLog ? `\nCrash log:\n${crashLog}` : `\nStderr:\n${stderrOutput || "(empty)"}`),
         ),
       );
     });
