@@ -60,22 +60,46 @@ async function startBackend(): Promise<void> {
   if (backendProcess) return;
 
   const appDataDir = app.getPath("userData");
-  backendProcess = utilityProcess.fork(getBackendEntrypoint(), [], {
-    cwd: getBackendCwd(),
-    stdio: "inherit",
+  const entrypoint = getBackendEntrypoint();
+
+  backendProcess = utilityProcess.fork(entrypoint, [], {
+    stdio: "pipe",
     env: {
       ...process.env,
       FILE_AGENT_APP_DATA_DIR: appDataDir,
       FILE_AGENT_PORT: String(BACKEND_PORT),
       FILE_AGENT_FRONTEND_DIST: getFrontendDist(),
+      FILE_AGENT_CWD: getBackendCwd(),
     },
   });
 
-  backendProcess.on("exit", () => {
-    backendProcess = null;
+  // Capture stderr for error reporting
+  let stderrOutput = "";
+  backendProcess.stderr?.on("data", (chunk: Buffer) => {
+    stderrOutput += chunk.toString();
+  });
+  backendProcess.stdout?.on("data", (chunk: Buffer) => {
+    process.stdout?.write(chunk);
   });
 
-  await waitForBackend(`http://127.0.0.1:${BACKEND_PORT}/api/init-status`);
+  // Detect early crash: race between "ready" and "exit"
+  const exitPromise = new Promise<never>((_, reject) => {
+    backendProcess!.on("exit", (code) => {
+      backendProcess = null;
+      reject(
+        new Error(
+          `Backend exited with code ${code}.\n` +
+            `Entrypoint: ${entrypoint}\n` +
+            `Stderr:\n${stderrOutput || "(empty)"}`,
+        ),
+      );
+    });
+  });
+
+  await Promise.race([
+    waitForBackend(`http://127.0.0.1:${BACKEND_PORT}/api/init-status`),
+    exitPromise,
+  ]);
 }
 
 async function createMainWindow(): Promise<void> {
@@ -109,11 +133,26 @@ app.whenReady().then(async () => {
     return result.canceled ? [] : result.filePaths;
   });
 
-  await createMainWindow();
+  try {
+    await createMainWindow();
+  } catch (err) {
+    dialog.showErrorBox(
+      "FileAgent 启动失败",
+      err instanceof Error ? err.message : String(err),
+    );
+    app.quit();
+  }
 
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      await createMainWindow();
+      try {
+        await createMainWindow();
+      } catch (err) {
+        dialog.showErrorBox(
+          "FileAgent 启动失败",
+          err instanceof Error ? err.message : String(err),
+        );
+      }
     }
   });
 });
