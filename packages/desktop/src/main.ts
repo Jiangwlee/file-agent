@@ -136,9 +136,14 @@ async function createMainWindow(): Promise<void> {
 
 app.whenReady().then(async () => {
   ipcMain.handle("file-agent:select-directories", async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ["openDirectory", "multiSelections"],
-    });
+    const win = BrowserWindow.getFocusedWindow();
+    const result = win
+      ? await dialog.showOpenDialog(win, {
+          properties: ["openDirectory", "multiSelections"],
+        })
+      : await dialog.showOpenDialog({
+          properties: ["openDirectory", "multiSelections"],
+        });
     return result.canceled ? [] : result.filePaths;
   });
 
