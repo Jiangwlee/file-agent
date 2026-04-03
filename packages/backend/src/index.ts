@@ -47,20 +47,37 @@ function runIndexing(reason: "startup" | "manual") {
     },
   });
   console.log(`Indexing files from: ${activeConfig.scanDirs.join(", ")}`);
-  const stats = buildIndex(db, activeConfig, (progress) => {
-    initState.setStatus({
-      stage: "building_index",
-      message: "正在构建文件索引...",
-      progress: {
-        currentDirectory: progress.currentDirectory,
-        scannedFiles: progress.scannedFiles,
-      },
-    });
-  });
 
-  enrichMetadata(db).then((n) => {
-    if (n > 0) console.log(`Enriched ${n} files with document metadata`);
-  });
+  let stats;
+  try {
+    stats = buildIndex(db, activeConfig, (progress) => {
+      initState.setStatus({
+        stage: "building_index",
+        message: "正在构建文件索引...",
+        progress: {
+          currentDirectory: progress.currentDirectory,
+          scannedFiles: progress.scannedFiles,
+        },
+      });
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Indexing failed:", err);
+    initState.setStatus({
+      stage: "error",
+      message: `索引失败: ${message}`,
+      error: message,
+    });
+    throw err;
+  }
+
+  enrichMetadata(db)
+    .then((n) => {
+      if (n > 0) console.log(`Enriched ${n} files with document metadata`);
+    })
+    .catch((err) => {
+      console.error("Metadata enrichment failed:", err);
+    });
 
   initState.setStatus({
     stage: "ready",
@@ -122,11 +139,20 @@ app.post("/api/search", async (c) => {
 });
 
 // Reindex API
+let isIndexing = false;
 app.post("/api/reindex", async (c) => {
-  console.log("Reindexing...");
-  lastStats = runIndexing("manual");
-  console.log(`Reindexed ${lastStats.totalFiles} files`);
-  return c.json(lastStats);
+  if (isIndexing) {
+    return c.json({ error: "Indexing already in progress" }, 409);
+  }
+  isIndexing = true;
+  try {
+    console.log("Reindexing...");
+    lastStats = runIndexing("manual");
+    console.log(`Reindexed ${lastStats.totalFiles} files`);
+    return c.json(lastStats);
+  } finally {
+    isIndexing = false;
+  }
 });
 
 // Stats API
@@ -171,13 +197,15 @@ app.get("/api/init-events", async (c) => {
     };
 
     initState.on("update", listener);
-    await writeStatus();
+    try {
+      await writeStatus();
 
-    while (!stream.closed) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      while (!stream.closed) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    } finally {
+      initState.off("update", listener);
     }
-
-    initState.off("update", listener);
   });
 });
 

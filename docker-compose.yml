@@ -4,13 +4,9 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - "C:/Users/bruce/Desktop:/data/desktop:ro"
-      - "D:/:/data/d-drive:ro"
       - "./data:/app/data"
     env_file:
       - .env
     environment:
-      - SCAN_DIRS=/data/desktop,/data/d-drive
-      - PATH_MAP=/data/desktop=C:\Users\bruce\Desktop,/data/d-drive=D:\
       - DB_PATH=/app/data/file_index.db
       - FILE_AGENT_PORT=8080

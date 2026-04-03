@@ -12,7 +12,7 @@ import { Buffer } from "node:buffer";
 async function extractPdfTitle(filepath: string): Promise<string | null> {
   try {
     const { PDFParse } = await import("pdf-parse");
-    const data = fs.readFileSync(filepath);
+    const data = await fs.promises.readFile(filepath);
     const pdf = new PDFParse({ data });
     const info = await pdf.getInfo();
     const title = info.info?.Title as string | undefined;

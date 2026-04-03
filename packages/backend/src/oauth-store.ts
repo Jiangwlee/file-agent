@@ -32,7 +32,7 @@ export function createOAuthStore(storagePath: string): OAuthStore {
   }
 
   function save() {
-    fs.writeFileSync(storagePath, JSON.stringify(credentials, null, 2));
+    fs.writeFileSync(storagePath, JSON.stringify(credentials, null, 2), { mode: 0o600 });
   }
 
   return {

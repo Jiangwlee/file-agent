@@ -177,7 +177,10 @@ export async function openOAuthDialog(): Promise<void> {
         body: JSON.stringify({}),
       });
 
-      const reader = resp.body!.getReader();
+      if (!resp.body) {
+        throw new Error("No response body from OAuth login endpoint");
+      }
+      const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 

@@ -15,10 +15,12 @@ export interface Config {
 
 function parsePathMap(raw: string | undefined): PathMapping[] {
   if (!raw) return [];
-  // Format: /data/desktop=C:\Users\bruce\Desktop,/data/d-drive=D:\
-  return raw.split(",").map((pair) => {
-    const [containerPath, hostPath] = pair.split("=");
-    return { containerPath: containerPath.trim(), hostPath: hostPath.trim() };
+  // Format: /data/desktop=C:\Users\name\Desktop,/data/d-drive=D:\
+  // Split on first "=" only to handle Windows paths that contain "="
+  return raw.split(",").flatMap((pair) => {
+    const sep = pair.indexOf("=");
+    if (sep === -1) return [];
+    return [{ containerPath: pair.slice(0, sep).trim(), hostPath: pair.slice(sep + 1).trim() }];
   });
 }
 
@@ -33,6 +35,6 @@ export function loadConfig(): Config {
     scanDirs,
     pathMap: parsePathMap(process.env.PATH_MAP),
     dbPath: process.env.DB_PATH || appPaths.dbPath || path.join(process.cwd(), "data", "file_index.db"),
-    port: parseInt(process.env.FILE_AGENT_PORT || "8080", 10),
+    port: (() => { const p = parseInt(process.env.FILE_AGENT_PORT || "8080", 10); return isNaN(p) ? 8080 : p; })(),
   };
 }

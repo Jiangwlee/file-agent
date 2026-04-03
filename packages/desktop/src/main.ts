@@ -1,11 +1,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn, type ChildProcess } from "node:child_process";
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, utilityProcess } from "electron";
+import type { UtilityProcess } from "electron";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_PORT = 4310;
-let backendProcess: ChildProcess | null = null;
+let backendProcess: UtilityProcess | null = null;
 const electronProcess = process as NodeJS.Process & {
   resourcesPath?: string;
 };
@@ -60,7 +60,7 @@ async function startBackend(): Promise<void> {
   if (backendProcess) return;
 
   const appDataDir = app.getPath("userData");
-  backendProcess = spawn(process.execPath, [getBackendEntrypoint()], {
+  backendProcess = utilityProcess.fork(getBackendEntrypoint(), [], {
     cwd: getBackendCwd(),
     stdio: "inherit",
     env: {
