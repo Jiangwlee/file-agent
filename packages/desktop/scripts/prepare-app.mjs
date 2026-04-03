@@ -65,17 +65,20 @@ async function bundleBackend() {
     plugins: [nativeAddonPlugin],
   });
 
-  // Rebuild better-sqlite3 native addon for Electron's Node.js ABI
+  // Download prebuilt better-sqlite3 native addon for Electron's Node.js ABI
   const electronPkg = JSON.parse(
     await fs.readFile(
       path.join(workspaceRoot, "node_modules/electron/package.json"),
       "utf-8",
     ),
   );
-  console.log(`Rebuilding better-sqlite3 for Electron ${electronPkg.version}...`);
+  console.log(`Downloading better-sqlite3 prebuilt for Electron ${electronPkg.version}...`);
   execSync(
-    `npx @electron/rebuild --only=better-sqlite3 -v ${electronPkg.version}`,
-    { cwd: workspaceRoot, stdio: "inherit" },
+    `npx prebuild-install -r electron -t ${electronPkg.version}`,
+    {
+      cwd: path.join(workspaceRoot, "node_modules/better-sqlite3"),
+      stdio: "inherit",
+    },
   );
 
   // Copy the rebuilt native addon binary
