@@ -128,7 +128,8 @@ app.use("/api/*", cors());
 // Search API
 app.post("/api/search", async (c) => {
   const body = await c.req.json<{ keywords: string[]; max_results?: number }>();
-  const { keywords, max_results = 10 } = body;
+  const currentConfig = loadAppConfig(appPaths);
+  const { keywords, max_results = currentConfig.search.maxResults } = body;
 
   if (!Array.isArray(keywords) || keywords.length === 0) {
     return c.json({ error: "keywords must be a non-empty array" }, 400);

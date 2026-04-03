@@ -36,6 +36,9 @@ interface AppConfig {
   indexing: {
     autoReindexOnStartup: boolean;
   };
+  search: {
+    maxResults: number;
+  };
 }
 
 interface InitStatus {
@@ -392,6 +395,23 @@ function renderSettingsView() {
                   `,
                 )}
           </div>
+        </section>
+
+        <section class="fa-section">
+          <h2>搜索</h2>
+          <label class="fa-field">
+            <span>最大返回结果数</span>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              .value=${String(appConfig.search.maxResults)}
+              @input=${(e: Event) => {
+                const val = parseInt((e.target as HTMLInputElement).value, 10);
+                if (!isNaN(val) && val > 0) appConfig!.search.maxResults = val;
+              }}
+            />
+          </label>
         </section>
 
         ${settingsMessage

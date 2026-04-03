@@ -14,6 +14,9 @@ export interface AppConfig {
   indexing: {
     autoReindexOnStartup: boolean;
   };
+  search: {
+    maxResults: number;
+  };
 }
 
 export interface AppPaths {
@@ -42,6 +45,9 @@ export function getDefaultAppConfig(): AppConfig {
     scanDirs: getDefaultScanDirs(),
     indexing: {
       autoReindexOnStartup: true,
+    },
+    search: {
+      maxResults: 10,
     },
   };
 }
@@ -92,6 +98,10 @@ export function loadAppConfig(paths: AppPaths = resolveAppPaths()): AppConfig {
         autoReindexOnStartup:
           parsed?.indexing?.autoReindexOnStartup ??
           defaults.indexing.autoReindexOnStartup,
+      },
+      search: {
+        maxResults:
+          parsed?.search?.maxResults ?? defaults.search.maxResults,
       },
     };
   } catch {
