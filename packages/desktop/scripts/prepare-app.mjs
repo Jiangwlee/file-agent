@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 import esbuild from "esbuild";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -64,7 +65,20 @@ async function bundleBackend() {
     plugins: [nativeAddonPlugin],
   });
 
-  // Copy only the native addon binary (the only file that can't be bundled)
+  // Rebuild better-sqlite3 native addon for Electron's Node.js ABI
+  const electronPkg = JSON.parse(
+    await fs.readFile(
+      path.join(workspaceRoot, "node_modules/electron/package.json"),
+      "utf-8",
+    ),
+  );
+  console.log(`Rebuilding better-sqlite3 for Electron ${electronPkg.version}...`);
+  execSync(
+    `npx @electron/rebuild --only=better-sqlite3 -v ${electronPkg.version}`,
+    { cwd: workspaceRoot, stdio: "inherit" },
+  );
+
+  // Copy the rebuilt native addon binary
   await fs.copyFile(
     path.join(
       workspaceRoot,
