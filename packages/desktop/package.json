@@ -7,7 +7,7 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && npx esbuild src/preload.ts --bundle --platform=node --format=cjs --outfile=dist/preload.js --external:electron",
     "prepare:app": "node scripts/prepare-app.mjs",
     "dist:win": "npm run prepare:app && electron-builder --win nsis",
     "start": "electron .",
