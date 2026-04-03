@@ -231,9 +231,19 @@ function subscribeInitEvents(): void {
 
 async function addDirectories(): Promise<void> {
   if (!appConfig) return;
-  const picked = window.fileAgentDesktop
-    ? await window.fileAgentDesktop.selectDirectories()
-    : [];
+  let picked: string[];
+  if (window.fileAgentDesktop) {
+    picked = await window.fileAgentDesktop.selectDirectories();
+  } else {
+    const input = prompt(
+      "输入目录路径（多个用分号分隔）\n例如：C:\\Users\\bruce\\Desktop;D:\\",
+    );
+    if (!input) return;
+    picked = input
+      .split(";")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
   const unique = new Set([...appConfig.scanDirs, ...picked]);
   appConfig.scanDirs = [...unique];
   renderApp();
