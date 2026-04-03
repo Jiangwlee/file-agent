@@ -35,7 +35,7 @@ function getBackendEntrypoint(): string {
     return path.join(
       electronProcess.resourcesPath || getWorkspaceRoot(),
       "backend",
-      "index.js",
+      "index.cjs",
     );
   }
   return path.join(getWorkspaceRoot(), "packages/backend/dist/index.js");

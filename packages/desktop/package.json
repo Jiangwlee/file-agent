@@ -25,7 +25,7 @@
     ],
     "extraResources": [
       {
-        "from": "../backend/dist",
+        "from": "bundled-backend",
         "to": "backend"
       },
       {

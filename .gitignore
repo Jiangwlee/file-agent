@@ -4,6 +4,7 @@ dist/
 .claude/
 data/
 packages/desktop/app/
+packages/desktop/bundled-backend/
 packages/desktop/release/
 *.db
 *.db-wal
