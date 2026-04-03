@@ -54,16 +54,33 @@ function createDialogContent(
                     ? html`<div class="text-xs text-green-600">已登录</div>`
                     : state.status === "waiting"
                       ? html`
-                          <div class="mt-2 space-y-1">
-                            <div class="text-xs text-muted-foreground">
-                              ${state.instructions || "请在浏览器中完成授权"}
-                            </div>
-                            <a
-                              href=${state.url}
-                              target="_blank"
-                              class="text-xs text-blue-600 hover:underline break-all"
-                              >${state.url}</a
-                            >
+                          <div class="mt-2 space-y-2">
+                            ${state.url
+                              ? html`
+                                  <div class="text-xs text-muted-foreground">
+                                    在浏览器中打开下方链接，输入验证码：
+                                  </div>
+                                  ${(() => {
+                                    const codeMatch = state.instructions?.match(/([A-Z0-9]{4}-[A-Z0-9]{4})/);
+                                    const code = codeMatch?.[1];
+                                    return code
+                                      ? html`<div
+                                          class="font-mono text-lg font-bold tracking-widest text-center py-2 px-3 bg-muted rounded border border-border select-all"
+                                        >
+                                          ${code}
+                                        </div>`
+                                      : html`<div class="text-xs text-muted-foreground">${state.instructions}</div>`;
+                                  })()}
+                                  <a
+                                    href=${state.url}
+                                    target="_blank"
+                                    class="text-xs text-blue-600 hover:underline break-all block"
+                                    >${state.url}</a
+                                  >
+                                `
+                              : html`<div class="text-xs text-muted-foreground">
+                                  ${state.instructions || "请在浏览器中完成授权"}
+                                </div>`}
                           </div>
                         `
                       : state.status === "progress"
